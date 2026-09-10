@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<title>重ねて色をつくるゲーム Online v0.3</title>
+<style>
+:root{--bg:#f2eee5;--paper:#fffdf8;--ink:#222;--muted:#716b62;--line:#d7d0c4;--dark:#222;--accent:#ffd34f;--ok:#2f9e62;--danger:#d34a38;--shadow:0 10px 28px rgba(0,0,0,.12)}
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;color:var(--ink);background:linear-gradient(180deg,#faf7f0,#ece5d8)}button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
+#app{width:100%;height:100%;display:flex;flex-direction:column}.topbar{height:56px;flex:0 0 56px;background:#242424;color:#fff;display:flex;align-items:center;gap:10px;padding:0 12px;box-shadow:0 2px 10px rgba(0,0,0,.2);z-index:30}.brand{font-weight:1000;white-space:nowrap}.ver{font-size:11px;color:#bbb}.roomtag{font-size:12px;background:#3b3b3b;border-radius:999px;padding:5px 8px}.spacer{flex:1}.topbtn{border:1px solid #555;background:#333;color:#fff;border-radius:9px;padding:7px 10px;font-size:12px;font-weight:800}.conn{width:9px;height:9px;border-radius:50%;background:#888}.conn.on{background:#56d68b}.conn.off{background:#ef6b5b}
+.screen{display:none;flex:1;min-height:0}.screen.active{display:flex}.panel{background:rgba(255,255,255,.94);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow)}
+#join{align-items:center;justify-content:center;padding:14px;overflow:auto}.join-card{width:min(620px,100%);padding:24px}.title{font-size:clamp(30px,6vw,48px);font-weight:1000;line-height:1.05;margin:0 0 8px}.subtitle{margin:0 0 20px;color:var(--muted)}.join-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;font-weight:900;color:#5e594f}.field input,.field select{width:100%;border:1px solid #c9c1b4;border-radius:12px;padding:12px;background:#fff}.join-btn{grid-column:1/-1;border:0;border-radius:13px;background:#222;color:#fff;padding:14px;font-weight:1000;font-size:17px}.note{margin-top:14px;background:#fff7d4;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.6;color:#5e5014}.error{margin-top:10px;color:#b83427;font-size:13px;font-weight:800;min-height:20px}
+#lobby{flex-direction:column;padding:12px;gap:10px;overflow:hidden}.lobby-grid{flex:1;min-height:0;display:grid;grid-template-columns:minmax(260px,36%) 1fr;gap:12px}.lobby-left,.lobby-right{min-height:0;display:flex;flex-direction:column;gap:10px}.room-card{padding:16px}.room-card h2{margin:0 0 5px}.hostline{font-size:12px;color:var(--muted)}.settings{padding:14px;display:grid;grid-template-columns:1fr 1fr;gap:10px}.settings .field input{padding:10px}.settings.locked{opacity:.7}.players-panel{flex:1;min-height:0;padding:14px;display:flex;flex-direction:column}.players-head{display:flex;align-items:center;margin-bottom:10px}.players-head b{font-size:17px}.count{margin-left:auto;font-size:12px;color:var(--muted)}.players{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;overflow:auto}.player{border:1px solid #ddd5c9;border-radius:12px;padding:10px;background:#fff;display:flex;align-items:center;gap:8px;min-width:0}.player.me{outline:2px solid #222}.player.offline{opacity:.45}.player-name{font-weight:900;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.badge{font-size:10px;font-weight:900;border-radius:999px;padding:3px 6px;background:#eee}.badge.host{background:#ffe590}.dot{width:8px;height:8px;border-radius:50%;background:#3dbb72;flex:0 0 auto}.player.offline .dot{background:#aaa}.lobby-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.bigbtn{border:0;border-radius:13px;padding:13px;font-weight:1000}.bigbtn.primary{background:#222;color:#fff}.bigbtn.sub{background:#fff;border:1px solid #bbb2a4}.bigbtn:disabled{opacity:.35;cursor:default}.waiting{padding:12px;text-align:center;color:#6a645b;font-weight:800}
+#game{flex-direction:column;min-height:0}.game-wrap{flex:1;min-height:0;display:grid;grid-template-columns:minmax(250px,32%) minmax(0,1fr);gap:10px;padding:10px}.left,.right{min-height:0;display:flex;flex-direction:column;gap:10px}.status{padding:10px 12px;display:flex;align-items:center;gap:8px}.round{font-weight:1000}.timer{margin-left:auto;font-weight:1000;background:#fff0b7;border-radius:999px;padding:5px 9px;min-width:66px;text-align:center}.timer.danger{background:#ffd2ca;color:#9a2b1e}.submitted-chip{font-size:11px;font-weight:900;background:#e8f6ed;color:#247746;border-radius:999px;padding:5px 8px}.target{flex:1;min-height:170px;padding:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}.target::before{content:"お題";position:absolute;left:12px;top:10px;font-weight:1000;color:#777}.difficulty{position:absolute;right:12px;top:10px;font-size:12px}.target-name{font-size:18px;font-weight:1000;margin-bottom:8px}.target-swatch{width:min(250px,70%);aspect-ratio:1.42;border-radius:18px;border:7px solid #fff;box-shadow:0 0 0 1px #d0c9bd,0 8px 22px rgba(0,0,0,.13)}.submitted-count{margin-top:12px;font-size:12px;color:#6f695f;font-weight:800}.scoreboard{padding:10px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px;max-height:180px;overflow:auto}.score{background:#f1ede5;border-radius:10px;padding:7px 8px;font-size:11px;font-weight:900;display:flex;justify-content:space-between;gap:7px}.score.me{outline:2px solid #222}.score.done{background:#e6f4eb}.stack-panel{flex:1;min-height:180px;padding:12px;display:flex;flex-direction:column}.stack-head{display:flex;align-items:center;gap:7px;margin-bottom:7px}.stack-head b{font-size:14px}.stack-note{margin-left:auto;font-size:11px;color:#777}.mix-area{flex:1;min-height:115px;border:2px dashed #c8c0b4;border-radius:14px;background:#fff;display:grid;place-items:center;position:relative}.mix-swatch{width:170px;max-width:50%;aspect-ratio:1.42;border-radius:12px;border:1px solid rgba(0,0,0,.08);box-shadow:0 6px 17px rgba(0,0,0,.12)}.mix-swatch.empty{background:repeating-linear-gradient(45deg,#f0f0f0 0 9px,#fafafa 9px 18px)}.stack-badges{position:absolute;left:8px;right:8px;bottom:7px;display:flex;gap:4px;flex-wrap:wrap}.stack-badge{font-size:10px;font-weight:900;background:rgba(255,255,255,.9);border:1px solid #ddd;border-radius:999px;padding:3px 6px}.hand{padding:10px}.cards{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.card{aspect-ratio:.74;border:0;border-radius:10px;position:relative;overflow:hidden;box-shadow:0 4px 11px rgba(0,0,0,.13);transition:.12s transform}.card:hover:not(:disabled){transform:translateY(-3px)}.card.used{opacity:.3}.card span{position:absolute;right:5px;bottom:4px;color:#fff;font-weight:1000;font-size:clamp(9px,1.2vw,13px);text-shadow:0 1px 3px #000}.actions{display:grid;grid-template-columns:1fr 1fr 2fr;gap:7px;margin-top:7px}.btn{border:1px solid #bcb4a8;background:#fff;border-radius:11px;padding:10px 7px;font-weight:1000}.btn.primary{background:#222;color:#fff;border-color:#222}.btn:disabled{opacity:.35;cursor:default}
+#result{flex-direction:column;padding:10px;gap:9px;overflow:hidden}.result-head{padding:10px 12px;display:flex;align-items:center;gap:9px}.result-title{font-weight:1000}.result-head .spacer{flex:1}.target-answer{padding:10px;display:grid;grid-template-columns:130px 1fr auto;align-items:center;gap:10px}.answer-swatch{height:72px;border-radius:12px;border:1px solid #cdc5b9}.answer-info b{display:block}.recipe{display:flex;gap:4px;flex-wrap:wrap;margin-top:5px}.recipe span{font-size:10px;font-weight:900;background:#eee;border-radius:999px;padding:3px 6px}.result-grid{flex:1;min-height:0;display:grid;grid-template-columns:repeat(5,minmax(0,1fr));grid-auto-rows:minmax(0,1fr);gap:7px}.result-player{min-width:0;border:1px solid #d8d0c4;border-radius:13px;background:#fff;padding:8px;display:flex;flex-direction:column;gap:5px}.result-name{font-weight:1000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.result-swatch{flex:1;min-height:50px;width:100%;border:1px solid #cfc7bb;border-radius:10px;position:relative;box-shadow:0 3px 9px rgba(0,0,0,.1)}.result-swatch::after{content:"クリックして試す";position:absolute;left:50%;bottom:4px;transform:translateX(-50%);white-space:nowrap;background:rgba(255,255,255,.86);border-radius:999px;padding:2px 5px;font-size:8px;font-weight:900}.result-meta{font-size:10px;color:#6d675e;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.result-pts{display:flex;justify-content:space-between;font-size:11px;font-weight:1000}.kind.exact{color:#d94b2f}.kind.type{color:#a87500}.kind.near{color:#28799f}.result-actions{display:flex;gap:8px}.result-actions button{border-radius:11px;padding:10px 15px;font-weight:1000}.primary{background:#222;color:#fff;border:1px solid #222}.sub{background:#fff;color:#222;border:1px solid #bcb4a8}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.63);display:none;align-items:center;justify-content:center;padding:14px;z-index:70}.modal.show{display:flex}.modal-card{width:min(720px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:17px;padding:18px}.modal-card h2{margin:0 0 10px}.close{float:right;border:0;background:#eee;border-radius:9px;padding:7px 10px}.try-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.try-box{border:1px solid #ddd5c9;border-radius:12px;padding:9px;background:#faf8f3}.try-swatch{height:120px;border-radius:10px;border:1px solid #d0c8bc}.try-seq{display:flex;gap:4px;flex-wrap:wrap;margin-top:6px}.try-seq span{font-size:10px;font-weight:900;background:#eee;border-radius:999px;padding:3px 6px}.try-cards{display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-top:10px}.try-card{aspect-ratio:.8;border:0;border-radius:9px;position:relative;overflow:hidden;box-shadow:0 3px 8px rgba(0,0,0,.12)}.try-card.used{opacity:.3}.try-card span{position:absolute;right:4px;bottom:3px;font-size:10px;color:#fff;font-weight:1000;text-shadow:0 1px 3px #000}.try-actions{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-top:8px}.try-actions button{padding:9px;border-radius:9px;border:1px solid #aaa;background:#fff;font-weight:900}.try-actions .primary{background:#222;color:#fff}.overlay-msg{position:fixed;inset:56px 0 0;display:none;place-items:center;background:rgba(0,0,0,.65);z-index:45}.overlay-msg.show{display:grid}.overlay-box{background:#fff;border-radius:16px;padding:22px;width:min(450px,90%);text-align:center;box-shadow:var(--shadow)}.overlay-box h2{margin:0 0 7px}.toast{position:fixed;left:50%;top:68px;transform:translateX(-50%);z-index:100;background:#222;color:#fff;border-radius:999px;padding:8px 13px;font-size:12px;font-weight:900;opacity:0;pointer-events:none;transition:.2s}.toast.show{opacity:1}
+@media(max-width:780px){.topbar{height:50px;flex-basis:50px;padding:0 8px}.brand{font-size:14px}.ver{display:none}.topbtn{font-size:10px;padding:6px 7px}.roomtag{font-size:10px}.overlay-msg{inset:50px 0 0}.join-card{padding:18px}.join-grid{grid-template-columns:1fr}.join-btn{grid-column:auto}.lobby-grid{grid-template-columns:1fr;grid-template-rows:auto 1fr}.lobby-left{display:grid;grid-template-columns:1fr 1fr;gap:8px}.room-card{padding:11px}.settings{padding:10px;gap:7px}.lobby-actions{grid-column:1/-1}.players{grid-template-columns:repeat(2,minmax(0,1fr))}.game-wrap{grid-template-columns:1fr;grid-template-rows:auto 1fr;padding:6px;gap:6px}.left{display:grid;grid-template-columns:42% 1fr;gap:6px}.status{grid-column:1/-1;padding:7px 8px}.target{min-height:0;padding:8px}.target-name{font-size:13px;margin-bottom:4px}.target-swatch{width:82%;border-width:4px;border-radius:10px}.submitted-count{font-size:10px;margin-top:6px}.scoreboard{max-height:none;padding:6px;grid-template-columns:repeat(2,minmax(0,1fr));overflow:hidden}.score{font-size:9px;padding:4px 5px}.right{gap:6px}.stack-panel{min-height:0;padding:7px}.mix-area{min-height:75px}.mix-swatch{width:115px;max-width:50%}.stack-badge{font-size:8px;padding:2px 4px}.hand{padding:6px}.cards{gap:3px}.card{border-radius:7px}.actions{gap:4px;margin-top:4px}.btn{padding:8px 4px;font-size:11px}.target-answer{grid-template-columns:90px 1fr;padding:7px}.answer-swatch{height:58px}.target-answer>.bigbtn{grid-column:1/-1}.result-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}.result-player{padding:5px;gap:2px;border-radius:9px}.result-swatch{min-height:24px;border-radius:7px}.result-swatch::after{font-size:7px;padding:1px 3px}.result-name{font-size:10px}.result-meta{font-size:8px}.result-pts{font-size:9px}.result-head{padding:6px 8px}.try-swatch{height:90px}.try-card span{font-size:8px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="topbar">
+    <div class="conn off" id="connDot"></div>
+    <div class="brand">重ねて色をつくるゲーム</div><div class="ver">Online v0.3</div>
+    <div class="roomtag hidden" id="roomTag"></div><div class="spacer"></div>
+    <button class="topbtn hidden" id="leaveBtn">退出</button>
+    <button class="topbtn" id="ruleBtn">ルール</button>
+  </div>
+
+  <section class="screen active" id="join">
+    <div class="panel join-card">
+      <h1 class="title">重ねて色を<br>つくるゲーム</h1>
+      <p class="subtitle">オンライン対戦・最大10人</p>
+      <div class="join-grid">
+        <div class="field"><label>名前</label><input id="nameInput" maxlength="12" placeholder="プレイヤー名"></div>
+        <div class="field"><label>部屋</label><select id="roomSelect"><option value="1">ルーム1</option><option value="2">ルーム2</option><option value="3">ルーム3</option><option value="4">ルーム4</option></select></div>
+        <button class="join-btn" id="joinBtn">部屋に入る</button>
+      </div>
+      <div class="error" id="joinError"></div>
+      <div class="note">最初に入った人がホストです。ゲーム中は全員が同時に色を作ります。回答内容は答え合わせまで他のプレイヤーには表示されません。</div>
+    </div>
+  </section>
+
+  <section class="screen" id="lobby">
+    <div class="lobby-grid">
+      <div class="lobby-left">
+        <div class="panel room-card"><h2 id="lobbyRoom">ルーム</h2><div class="hostline" id="hostLine">ホスト：</div></div>
+        <div class="panel settings" id="settingsBox">
+          <div class="field"><label>勝利点</label><input id="winScoreInput" type="number" min="1" max="99" value="5"></div>
+          <div class="field"><label>制限時間（秒）</label><input id="timeLimitInput" type="number" min="0" max="999" value="60"></div>
+        </div>
+        <div class="lobby-actions">
+          <button class="bigbtn sub" id="resetRoomBtn">部屋をリセット</button>
+          <button class="bigbtn primary" id="startBtn">ゲーム開始</button>
+        </div>
+      </div>
+      <div class="lobby-right">
+        <div class="panel players-panel"><div class="players-head"><b>参加プレイヤー</b><span class="count" id="playerCountText">0 / 10</span></div><div class="players" id="lobbyPlayers"></div></div>
+        <div class="panel waiting" id="waitingText">ホストがゲームを開始するまでお待ちください</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="game">
+    <div class="game-wrap">
+      <div class="left">
+        <div class="panel status"><span class="round" id="roundText">第1問</span><span class="submitted-chip hidden" id="mySubmitted">回答済み</span><span class="timer" id="timerText">60秒</span></div>
+        <div class="panel target"><div class="difficulty" id="difficulty"></div><div class="target-name" id="targetName">お題</div><div class="target-swatch" id="targetSwatch"></div><div class="submitted-count" id="submittedCount">回答 0 / 0</div></div>
+        <div class="panel scoreboard" id="scoreboard"></div>
+      </div>
+      <div class="right">
+        <div class="panel stack-panel"><div class="stack-head"><b>自分の重ね色</b><span class="stack-note">押した順が下 → 上</span></div><div class="mix-area"><div class="mix-swatch empty" id="mixSwatch"></div><div class="stack-badges" id="stackBadges"></div></div></div>
+        <div class="panel hand"><div class="cards" id="cards"></div><div class="actions"><button class="btn" id="undoBtn">1枚戻す</button><button class="btn" id="clearBtn">全部戻す</button><button class="btn primary" id="submitBtn">この色で回答</button></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="screen" id="result">
+    <div class="panel result-head"><div class="result-title" id="resultTitle">答え合わせ</div><div class="spacer"></div><div id="resultTimerNote" style="font-size:11px;color:#777"></div></div>
+    <div class="panel target-answer"><div class="answer-swatch" id="answerSwatch"></div><div class="answer-info"><b id="answerName">正解</b><div class="recipe" id="answerRecipe"></div></div><button class="bigbtn primary" id="nextBtn">次の問題へ</button></div>
+    <div class="result-grid" id="resultGrid"></div>
+  </section>
+</div>
+
+<div class="modal" id="ruleModal"><div class="modal-card"><button class="close" id="closeRule">閉じる</button><h2>ルール</h2><p>7枚の半透明カードを好きな順番で重ね、お題の色を再現します。</p><p><b>得点：</b>正しいカード種類と順番まで完全一致で3点、使ったカード種類だけ一致で1点。完全一致・種類一致が誰もいなかった場合は、お題色に最も近いプレイヤーが1点です。同率なら同率全員が1点です。</p><p>制限時間が0秒なら無制限です。時間切れ時は、その時点で作っていた色が自動回答になります。</p></div></div>
+
+<div class="modal" id="tryModal"><div class="modal-card"><button class="close" id="closeTry">閉じる</button><h2 id="tryTitle">色を試す</h2><div class="try-grid"><div class="try-box"><b>お題</b><div class="try-swatch" id="tryTarget"></div></div><div class="try-box"><b>試している色</b><div class="try-swatch" id="trySwatch"></div><div class="try-seq" id="trySeq"></div></div></div><div class="try-cards" id="tryCards"></div><div class="try-actions"><button id="tryUndo">1枚戻す</button><button id="tryClear">全部戻す</button><button class="primary" id="tryReset">元の回答</button></div></div></div>
+
+<div class="overlay-msg" id="reconnectOverlay"><div class="overlay-box"><h2>再接続中</h2><div>通信が戻ると自動で復帰します。</div></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+(()=>{
+'use strict';
+const SERVER_URL='https://kasanete-color-online.naitoryo7110.workers.dev';
+const CARD_DEFS=[
+{id:'C70',label:'C 70',rgb:[0,174,239],a:.70},{id:'C50',label:'C 50',rgb:[0,174,239],a:.50},
+{id:'M70',label:'M 70',rgb:[236,0,140],a:.70},{id:'M50',label:'M 50',rgb:[236,0,140],a:.50},
+{id:'Y70',label:'Y 70',rgb:[255,242,0],a:.70},{id:'Y50',label:'Y 50',rgb:[255,242,0],a:.50},
+{id:'K25',label:'K 25',rgb:[35,31,32],a:.25}
+];
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const state={ws:null,room:null,myId:null,token:null,snapshot:null,currentStack:[],submitted:false,reconnectTimer:null,reconnectAttempt:0,timerRAF:null,tryStack:[],tryBase:[],resultTargetRgb:[255,255,255],manualLeave:false};
+function card(id){return CARD_DEFS.find(c=>c.id===id)}
+function mix(seq){let out=[255,255,255];for(const id of seq){const c=card(id);if(!c)continue;out=out.map((v,i)=>Math.round(c.rgb[i]*c.a+v*(1-c.a)));}return out}
+function rgbCss(rgb){return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`}
+function cardBg(c){return `rgba(${c.rgb[0]},${c.rgb[1]},${c.rgb[2]},${Math.max(.58,c.a)})`}
+function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
+function showScreen(id){$$('.screen').forEach(x=>x.classList.remove('active'));$(id).classList.add('active')}
+function toast(msg){const e=$('#toast');e.textContent=msg;e.classList.add('show');clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('show'),1800)}
+function setConn(on){$('#connDot').className='conn '+(on?'on':'off')}
+function wsBase(){return SERVER_URL.replace(/^http/,'ws').replace(/\/$/,'')}
+function send(type,data={}){if(state.ws?.readyState===WebSocket.OPEN)state.ws.send(JSON.stringify({type,...data}))}
+function tokenKey(room){return `kasanete_color_token_room_${room}`}
+function join(){const name=$('#nameInput').value.trim();const room=$('#roomSelect').value;if(!name){$('#joinError').textContent='名前を入力してください';return}state.room=room;state.manualLeave=false;state.token=localStorage.getItem(tokenKey(room))||'';connect(name)}
+function connect(name){clearTimeout(state.reconnectTimer);$('#joinError').textContent='';const url=`${wsBase()}/room/${encodeURIComponent(state.room)}/ws`;try{state.ws=new WebSocket(url)}catch(e){scheduleReconnect(name);return}state.ws.onopen=()=>{setConn(true);state.reconnectAttempt=0;$('#reconnectOverlay').classList.remove('show');send('join',{name,token:state.token})};state.ws.onmessage=e=>{let m;try{m=JSON.parse(e.data)}catch{return}handle(m)};state.ws.onclose=()=>{setConn(false);if(!state.manualLeave&&state.room){$('#reconnectOverlay').classList.add('show');scheduleReconnect(name)}};state.ws.onerror=()=>setConn(false)}
+function scheduleReconnect(name){if(state.manualLeave)return;clearTimeout(state.reconnectTimer);const delay=Math.min(5000,700+state.reconnectAttempt*700);state.reconnectAttempt++;state.reconnectTimer=setTimeout(()=>connect(name||$('#nameInput').value.trim()||'プレイヤー'),delay)}
+function handle(m){
+ if(m.type==='joined'){state.myId=m.playerId;state.token=m.token;localStorage.setItem(tokenKey(state.room),state.token);$('#roomTag').textContent=`ルーム${state.room}`;$('#roomTag').classList.remove('hidden');$('#leaveBtn').classList.remove('hidden');return}
+ if(m.type==='error'){if($('#join').classList.contains('active'))$('#joinError').textContent=m.message;else toast(m.message);return}
+ if(m.type==='snapshot'){const prevPhase=state.snapshot?.phase;state.snapshot=m.state;syncFromSnapshot(prevPhase);return}
+ if(m.type==='toast'){toast(m.message)}
+}
+function syncFromSnapshot(prevPhase){const s=state.snapshot;if(!s)return;const me=s.players.find(p=>p.id===state.myId);if(!me)return;
+ if(s.phase==='lobby'){state.currentStack=[];state.submitted=false;renderLobby();showScreen('#lobby');stopTimer()}
+ else if(s.phase==='playing'){if(prevPhase!=='playing'||state._round!==s.round){state.currentStack=[...(me.draft||[])];state.submitted=!!me.submitted;state._round=s.round} else {state.submitted=!!me.submitted;if(!state.submitted&&Array.isArray(me.draft)&&!arraysEqual(me.draft,state.currentStack))state.currentStack=[...me.draft]}
+ renderGame();showScreen('#game');startTimer()}
+ else if(s.phase==='result'||s.phase==='finished'){state.currentStack=[];state.submitted=false;renderResult();showScreen('#result');stopTimer()}
+}
+function arraysEqual(a,b){return a.length===b.length&&a.every((x,i)=>x===b[i])}
+function isHost(){return state.snapshot?.hostId===state.myId}
+function renderLobby(){const s=state.snapshot;$('#lobbyRoom').textContent=`ルーム${state.room}`;const host=s.players.find(p=>p.id===s.hostId);$('#hostLine').textContent=`ホスト：${host?.name||'-'}`;$('#playerCountText').textContent=`${s.players.length} / 10`;
+ $('#lobbyPlayers').innerHTML=s.players.map(p=>`<div class="player ${p.id===state.myId?'me':''} ${p.connected?'':'offline'}"><span class="dot"></span><span class="player-name">${esc(p.name)}</span>${p.id===s.hostId?'<span class="badge host">HOST</span>':''}${p.id===state.myId?'<span class="badge">自分</span>':''}</div>`).join('');
+ $('#winScoreInput').value=s.settings.winScore;$('#timeLimitInput').value=s.settings.timeLimit;const hostMe=isHost();$('#winScoreInput').disabled=!hostMe;$('#timeLimitInput').disabled=!hostMe;$('#settingsBox').classList.toggle('locked',!hostMe);$('#startBtn').disabled=!hostMe||s.players.length<1;$('#resetRoomBtn').disabled=!hostMe;$('#startBtn').textContent=hostMe?'ゲーム開始':'ホストのみ開始';$('#waitingText').textContent=hostMe?'設定を決めてゲームを開始できます':'ホストがゲームを開始するまでお待ちください'}
+function updateSettings(){if(!isHost())return;const winScore=Math.max(1,Math.min(99,Math.floor(+$('#winScoreInput').value||5)));const timeLimit=Math.max(0,Math.min(999,Math.floor(+$('#timeLimitInput').value||0)));send('settings',{winScore,timeLimit})}
+function renderGame(){const s=state.snapshot,me=s.players.find(p=>p.id===state.myId);$('#roundText').textContent=`第${s.round}問 / ${s.settings.winScore}点先取`;$('#targetName').textContent=s.target?.name||'お題';$('#difficulty').textContent='★'.repeat(s.target?.difficulty||0)+'☆'.repeat(5-(s.target?.difficulty||0));$('#targetSwatch').style.background=rgbCss(s.target?.rgb||[255,255,255]);const done=s.players.filter(p=>p.submitted).length;$('#submittedCount').textContent=`回答 ${done} / ${s.players.length}`;state.submitted=!!me.submitted;$('#mySubmitted').classList.toggle('hidden',!state.submitted);
+ $('#scoreboard').innerHTML=s.players.map(p=>`<div class="score ${p.id===state.myId?'me':''} ${p.submitted?'done':''}"><span>${esc(p.name)}</span><span>${p.score}pt${p.submitted?' ✓':''}</span></div>`).join('');renderCards();renderStack();$('#submitBtn').disabled=state.submitted;$('#undoBtn').disabled=state.submitted||!state.currentStack.length;$('#clearBtn').disabled=state.submitted||!state.currentStack.length}
+function renderCards(){const used=new Set(state.currentStack),box=$('#cards');box.innerHTML='';CARD_DEFS.forEach(c=>{const b=document.createElement('button');b.className='card'+(used.has(c.id)?' used':'');b.style.background=cardBg(c);b.innerHTML=`<span>${c.label}</span>`;b.disabled=state.submitted||used.has(c.id);b.onclick=()=>{state.currentStack.push(c.id);draftChanged()};box.appendChild(b)})}
+function renderStack(){const sw=$('#mixSwatch');if(state.currentStack.length){sw.classList.remove('empty');sw.style.background=rgbCss(mix(state.currentStack))}else{sw.classList.add('empty');sw.style.background=''}$('#stackBadges').innerHTML=state.currentStack.map((id,i)=>`<span class="stack-badge">${i+1}. ${id}</span>`).join('')}
+function draftChanged(){renderCards();renderStack();$('#undoBtn').disabled=!state.currentStack.length;$('#clearBtn').disabled=!state.currentStack.length;send('draft',{seq:state.currentStack})}
+function submit(){if(state.submitted)return;send('submit',{seq:state.currentStack})}
+function startTimer(){stopTimer();const tick=()=>{const s=state.snapshot;if(!s||s.phase!=='playing')return;const limit=s.settings.timeLimit;if(!limit){$('#timerText').textContent='無制限';$('#timerText').classList.remove('danger');state.timerRAF=requestAnimationFrame(tick);return}const remain=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));$('#timerText').textContent=`${remain}秒`;$('#timerText').classList.toggle('danger',remain<=10);state.timerRAF=requestAnimationFrame(tick)};tick()}
+function stopTimer(){if(state.timerRAF)cancelAnimationFrame(state.timerRAF);state.timerRAF=null}
+function renderResult(){const s=state.snapshot,r=s.result;state.resultTargetRgb=r.targetRgb;$('#resultTitle').textContent=s.phase==='finished'?`ゲーム終了：${r.winners.join('・')} の勝ち！`:`第${s.round}問　答え合わせ`;$('#answerSwatch').style.background=rgbCss(r.targetRgb);$('#answerName').textContent=`お題：${r.targetName}`;$('#answerRecipe').innerHTML=r.targetSeq.map((id,i)=>`<span>${i+1}. ${id}</span>`).join('');$('#resultTimerNote').textContent=s.phase==='finished'?`最終得点 ${r.topScore}pt`:'';
+ $('#resultGrid').innerHTML=r.rows.map(x=>`<div class="result-player"><div class="result-name">${esc(x.name)}</div><button class="result-swatch" data-id="${x.id}" style="background:${rgbCss(x.rgb)}"></button><div class="result-meta">${x.seq.length?x.seq.join(' → '):'カードなし'} / ${x.sim}%</div><div class="result-pts"><span class="kind ${x.kindClass}">${esc(x.kind||'得点なし')}</span><span>+${x.points} / 計${x.score}pt</span></div></div>`).join('');$$('.result-swatch').forEach(b=>b.onclick=()=>openTry(b.dataset.id));const host=isHost();$('#nextBtn').disabled=!host;$('#nextBtn').textContent=s.phase==='finished'?(host?'ロビーへ戻る':'ゲーム終了'):(host?'次の問題へ':'ホスト待ち')}
+function openTry(id){const row=state.snapshot?.result?.rows.find(x=>x.id===id);if(!row)return;state.tryBase=[...row.seq];state.tryStack=[...row.seq];$('#tryTitle').textContent=`${row.name} の色を試す`;$('#tryTarget').style.background=rgbCss(state.resultTargetRgb);renderTry();$('#tryModal').classList.add('show')}
+function renderTry(){const sw=$('#trySwatch');sw.style.background=rgbCss(mix(state.tryStack));$('#trySeq').innerHTML=state.tryStack.length?state.tryStack.map((id,i)=>`<span>${i+1}. ${id}</span>`).join(''):'<span>カードなし（白）</span>';const used=new Set(state.tryStack),box=$('#tryCards');box.innerHTML='';CARD_DEFS.forEach(c=>{const b=document.createElement('button');b.className='try-card'+(used.has(c.id)?' used':'');b.style.background=cardBg(c);b.innerHTML=`<span>${c.label}</span>`;b.disabled=used.has(c.id);b.onclick=()=>{state.tryStack.push(c.id);renderTry()};box.appendChild(b)});$('#tryUndo').disabled=!state.tryStack.length;$('#tryClear').disabled=!state.tryStack.length}
+function leave(){state.manualLeave=true;send('leave');try{state.ws?.close()}catch{}state.ws=null;state.snapshot=null;state.room=null;state.myId=null;state.currentStack=[];$('#roomTag').classList.add('hidden');$('#leaveBtn').classList.add('hidden');$('#reconnectOverlay').classList.remove('show');setConn(false);showScreen('#join')}
+$('#joinBtn').onclick=join;$('#nameInput').value=localStorage.getItem('kasanete_color_name')||'';$('#nameInput').addEventListener('change',()=>localStorage.setItem('kasanete_color_name',$('#nameInput').value.trim()));$('#winScoreInput').addEventListener('change',updateSettings);$('#timeLimitInput').addEventListener('change',updateSettings);$('#startBtn').onclick=()=>{updateSettings();send('start')};$('#resetRoomBtn').onclick=()=>{if(confirm('この部屋のゲーム状態と得点をリセットしますか？'))send('reset')};$('#undoBtn').onclick=()=>{if(!state.submitted&&state.currentStack.length){state.currentStack.pop();draftChanged()}};$('#clearBtn').onclick=()=>{if(!state.submitted){state.currentStack=[];draftChanged()}};$('#submitBtn').onclick=submit;$('#nextBtn').onclick=()=>{if(isHost())send(state.snapshot.phase==='finished'?'backToLobby':'next')};$('#leaveBtn').onclick=leave;
+$('#ruleBtn').onclick=()=>$('#ruleModal').classList.add('show');$('#closeRule').onclick=()=>$('#ruleModal').classList.remove('show');$('#ruleModal').onclick=e=>{if(e.target.id==='ruleModal')$('#ruleModal').classList.remove('show')};$('#closeTry').onclick=()=>$('#tryModal').classList.remove('show');$('#tryModal').onclick=e=>{if(e.target.id==='tryModal')$('#tryModal').classList.remove('show')};$('#tryUndo').onclick=()=>{state.tryStack.pop();renderTry()};$('#tryClear').onclick=()=>{state.tryStack=[];renderTry()};$('#tryReset').onclick=()=>{state.tryStack=[...state.tryBase];renderTry()};
+})();
+</script>
+</body>
+</html>
