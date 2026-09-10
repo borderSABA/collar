@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
-<title>重ねて色をつくるゲーム Online v0.5</title>
+<title>重ねて色をつくるゲーム Online v0.6</title>
 <style>
 :root{--bg:#f2eee5;--paper:#fffdf8;--ink:#222;--muted:#716b62;--line:#d7d0c4;--dark:#222;--accent:#ffd34f;--ok:#2f9e62;--danger:#d34a38;--shadow:0 10px 28px rgba(0,0,0,.12)}
 *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;font-family:system-ui,-apple-system,"Segoe UI","Noto Sans JP",sans-serif;color:var(--ink);background:linear-gradient(180deg,#faf7f0,#ece5d8)}button,input,select{font:inherit}button{cursor:pointer}.hidden{display:none!important}
@@ -21,7 +21,7 @@
 <div id="app">
   <div class="topbar">
     <div class="conn off" id="connDot"></div>
-    <div class="brand">重ねて色をつくるゲーム</div><div class="ver">Online v0.5</div>
+    <div class="brand">重ねて色をつくるゲーム</div><div class="ver">Online v0.6</div>
     <div class="roomtag hidden" id="roomTag"></div><div class="spacer"></div>
     <button class="topbtn hidden" id="leaveBtn">退出</button>
     <button class="topbtn" id="ruleBtn">ルール</button>
@@ -71,7 +71,7 @@
         <div class="panel scoreboard" id="scoreboard"></div>
       </div>
       <div class="right">
-        <div class="panel stack-panel"><div class="stack-head"><b>自分の重ね色</b><span class="stack-note">押した順が下 → 上</span></div><div class="mix-area"><div class="mix-swatch empty" id="mixSwatch"></div><div class="stack-badges" id="stackBadges"></div></div></div>
+        <div class="panel stack-panel"><div class="stack-head"><b>自分の重ね色</b><span class="stack-note">重ねる順番で色は変わりません</span></div><div class="mix-area"><div class="mix-swatch empty" id="mixSwatch"></div><div class="stack-badges" id="stackBadges"></div></div></div>
         <div class="panel hand"><div class="cards" id="cards"></div><div class="actions"><button class="btn" id="undoBtn">1枚戻す</button><button class="btn" id="clearBtn">全部戻す</button><button class="btn primary" id="submitBtn">この色で回答</button></div></div>
       </div>
     </div>
@@ -84,7 +84,7 @@
   </section>
 </div>
 
-<div class="modal" id="ruleModal"><div class="modal-card"><button class="close" id="closeRule">閉じる</button><h2>ルール</h2><p>7枚の半透明カードを好きな順番で重ね、お題の色を再現します。</p><p><b>難易度：</b>1色～5色は、正解に使われるカード枚数です。ランダムでは毎問1～5色から選ばれます。</p><p><b>得点：</b>正しいカード種類と順番まで完全一致で3点、使ったカード種類だけ一致で1点。完全一致・種類一致が誰もいなかった場合は、お題色に最も近いプレイヤーが1点です。同率なら同率全員が1点です。</p><p>制限時間が0秒なら無制限です。時間切れ時は、その時点で作っていた色が自動回答になります。</p></div></div>
+<div class="modal" id="ruleModal"><div class="modal-card"><button class="close" id="closeRule">閉じる</button><h2>ルール</h2><p>7枚の半透明カードから使う色を選び、お題の色を再現します。同じカードの組み合わせなら、重ねる順番を変えても完成色は同じです。</p><p><b>難易度：</b>1色～5色は、正解に使われるカード枚数です。ランダムでは毎問1～5色から選ばれます。</p><p><b>得点：</b>使用したカードが正解と一致すれば2点です。一致者が誰もいなかった場合は、お題色に最も近いプレイヤーが1点です。同率なら同率全員が1点です。</p><p>制限時間が0秒なら無制限です。時間切れ時は、その時点で作っていた色が自動回答になります。</p></div></div>
 
 <div class="modal" id="tryModal"><div class="modal-card"><button class="close" id="closeTry">閉じる</button><h2 id="tryTitle">色を試す</h2><div class="try-grid"><div class="try-box"><b>お題</b><div class="try-swatch" id="tryTarget"></div></div><div class="try-box"><b>試している色</b><div class="try-swatch" id="trySwatch"></div><div class="try-seq" id="trySeq"></div></div></div><div class="try-cards" id="tryCards"></div><div class="try-actions"><button id="tryUndo">1枚戻す</button><button id="tryClear">全部戻す</button><button class="primary" id="tryReset">元の回答</button></div></div></div>
 
@@ -104,7 +104,7 @@ const CARD_DEFS=[
 const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
 const state={ws:null,room:null,myId:null,token:null,snapshot:null,currentStack:[],submitted:false,reconnectTimer:null,reconnectAttempt:0,timerRAF:null,tryStack:[],tryBase:[],resultTargetRgb:[255,255,255],manualLeave:false,roomStatusTimer:null};
 function card(id){return CARD_DEFS.find(c=>c.id===id)}
-function mix(seq){let out=[255,255,255];for(const id of seq){const c=card(id);if(!c)continue;out=out.map((v,i)=>Math.round(c.rgb[i]*c.a+v*(1-c.a)));}return out}
+function mix(seq){const trans=[1,1,1];for(const id of seq){const c=card(id);if(!c)continue;for(let i=0;i<3;i++){const sheet=(1-c.a)+(c.rgb[i]/255)*c.a;trans[i]*=sheet}}return trans.map(v=>Math.round(255*v))}
 function rgbCss(rgb){return `rgb(${rgb[0]},${rgb[1]},${rgb[2]})`}
 function cardBg(c){return `rgba(${c.rgb[0]},${c.rgb[1]},${c.rgb[2]},${Math.max(.58,c.a)})`}
 function esc(s){return String(s??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]))}
@@ -161,10 +161,10 @@ function draftChanged(){renderCards();renderStack();$('#undoBtn').disabled=!stat
 function submit(){if(state.submitted)return;send('submit',{seq:state.currentStack})}
 function startTimer(){stopTimer();const tick=()=>{const s=state.snapshot;if(!s||s.phase!=='playing')return;const limit=s.settings.timeLimit;if(!limit){$('#timerText').textContent='無制限';$('#timerText').classList.remove('danger');state.timerRAF=requestAnimationFrame(tick);return}const remain=Math.max(0,Math.ceil((s.deadline-Date.now())/1000));$('#timerText').textContent=`${remain}秒`;$('#timerText').classList.toggle('danger',remain<=10);state.timerRAF=requestAnimationFrame(tick)};tick()}
 function stopTimer(){if(state.timerRAF)cancelAnimationFrame(state.timerRAF);state.timerRAF=null}
-function renderResult(){const s=state.snapshot,r=s.result;state.resultTargetRgb=r.targetRgb;$('#resultTitle').textContent=s.phase==='finished'?`ゲーム終了：${r.winners.join('・')} の勝ち！`:`第${s.round}問　答え合わせ`;$('#answerSwatch').style.background=rgbCss(r.targetRgb);$('#answerName').textContent=`お題：${r.targetName}`;$('#answerRecipe').innerHTML=r.targetSeq.map((id,i)=>`<span>${i+1}. ${id}</span>`).join('');$('#resultTimerNote').textContent=s.phase==='finished'?`最終得点 ${r.topScore}pt`:'';
- $('#resultGrid').innerHTML=r.rows.map(x=>`<div class="result-player"><div class="result-name">${esc(x.name)}</div><button class="result-swatch" data-id="${x.id}" style="background:${rgbCss(x.rgb)}"></button><div class="result-meta">${x.seq.length?x.seq.join(' → '):'カードなし'} / ${x.sim}%</div><div class="result-pts"><span class="kind ${x.kindClass}">${esc(x.kind||'得点なし')}</span><span>+${x.points} / 計${x.score}pt</span></div></div>`).join('');$$('.result-swatch').forEach(b=>b.onclick=()=>openTry(b.dataset.id));const host=isHost();$('#nextBtn').disabled=!host;$('#nextBtn').textContent=s.phase==='finished'?(host?'ロビーへ戻る':'ゲーム終了'):(host?'次の問題へ':'ホスト待ち')}
+function renderResult(){const s=state.snapshot,r=s.result;state.resultTargetRgb=r.targetRgb;$('#resultTitle').textContent=s.phase==='finished'?`ゲーム終了：${r.winners.join('・')} の勝ち！`:`第${s.round}問　答え合わせ`;$('#answerSwatch').style.background=rgbCss(r.targetRgb);$('#answerName').textContent=`お題：${r.targetName}`;$('#answerRecipe').innerHTML=r.targetSeq.map(id=>`<span>${id}</span>`).join('');$('#resultTimerNote').textContent=s.phase==='finished'?`最終得点 ${r.topScore}pt`:'';
+ $('#resultGrid').innerHTML=r.rows.map(x=>`<div class="result-player"><div class="result-name">${esc(x.name)}</div><button class="result-swatch" data-id="${x.id}" style="background:${rgbCss(x.rgb)}"></button><div class="result-meta">${x.seq.length?x.seq.join(' + '):'カードなし'} / ${x.sim}%</div><div class="result-pts"><span class="kind ${x.kindClass}">${esc(x.kind||'得点なし')}</span><span>+${x.points} / 計${x.score}pt</span></div></div>`).join('');$$('.result-swatch').forEach(b=>b.onclick=()=>openTry(b.dataset.id));const host=isHost();$('#nextBtn').disabled=!host;$('#nextBtn').textContent=s.phase==='finished'?(host?'ロビーへ戻る':'ゲーム終了'):(host?'次の問題へ':'ホスト待ち')}
 function openTry(id){const row=state.snapshot?.result?.rows.find(x=>x.id===id);if(!row)return;state.tryBase=[...row.seq];state.tryStack=[...row.seq];$('#tryTitle').textContent=`${row.name} の色を試す`;$('#tryTarget').style.background=rgbCss(state.resultTargetRgb);renderTry();$('#tryModal').classList.add('show')}
-function renderTry(){const sw=$('#trySwatch');sw.style.background=rgbCss(mix(state.tryStack));$('#trySeq').innerHTML=state.tryStack.length?state.tryStack.map((id,i)=>`<span>${i+1}. ${id}</span>`).join(''):'<span>カードなし（白）</span>';const used=new Set(state.tryStack),box=$('#tryCards');box.innerHTML='';CARD_DEFS.forEach(c=>{const b=document.createElement('button');b.className='try-card'+(used.has(c.id)?' used':'');b.style.background=cardBg(c);b.innerHTML=`<span>${c.label}</span>`;b.disabled=used.has(c.id);b.onclick=()=>{state.tryStack.push(c.id);renderTry()};box.appendChild(b)});$('#tryUndo').disabled=!state.tryStack.length;$('#tryClear').disabled=!state.tryStack.length}
+function renderTry(){const sw=$('#trySwatch');sw.style.background=rgbCss(mix(state.tryStack));$('#trySeq').innerHTML=state.tryStack.length?state.tryStack.map(id=>`<span>${id}</span>`).join(''):'<span>カードなし（白）</span>';const used=new Set(state.tryStack),box=$('#tryCards');box.innerHTML='';CARD_DEFS.forEach(c=>{const b=document.createElement('button');b.className='try-card'+(used.has(c.id)?' used':'');b.style.background=cardBg(c);b.innerHTML=`<span>${c.label}</span>`;b.disabled=used.has(c.id);b.onclick=()=>{state.tryStack.push(c.id);renderTry()};box.appendChild(b)});$('#tryUndo').disabled=!state.tryStack.length;$('#tryClear').disabled=!state.tryStack.length}
 function leave(){state.manualLeave=true;send('leave');try{state.ws?.close()}catch{}state.ws=null;state.snapshot=null;state.room=null;state.myId=null;state.currentStack=[];$('#roomTag').classList.add('hidden');$('#leaveBtn').classList.add('hidden');$('#reconnectOverlay').classList.remove('show');setConn(false);showScreen('#join');setTimeout(refreshRooms,100)}
 $('#nameInput').value=localStorage.getItem('kasanete_color_name')||'';$('#nameInput').addEventListener('change',()=>localStorage.setItem('kasanete_color_name',$('#nameInput').value.trim()));$('#refreshRoomsBtn').onclick=refreshRooms;refreshRooms();state.roomStatusTimer=setInterval(refreshRooms,1800);$('#winScoreInput').addEventListener('change',updateSettings);$('#timeLimitInput').addEventListener('change',updateSettings);$('#difficultyInput').addEventListener('change',updateSettings);$('#startBtn').onclick=()=>{updateSettings();send('start')};$('#resetRoomBtn').onclick=()=>{if(confirm('この部屋のゲーム状態と得点をリセットしますか？'))send('reset')};$('#undoBtn').onclick=()=>{if(!state.submitted&&state.currentStack.length){state.currentStack.pop();draftChanged()}};$('#clearBtn').onclick=()=>{if(!state.submitted){state.currentStack=[];draftChanged()}};$('#submitBtn').onclick=submit;$('#nextBtn').onclick=()=>{if(isHost())send(state.snapshot.phase==='finished'?'backToLobby':'next')};$('#leaveBtn').onclick=leave;
 $('#ruleBtn').onclick=()=>$('#ruleModal').classList.add('show');$('#closeRule').onclick=()=>$('#ruleModal').classList.remove('show');$('#ruleModal').onclick=e=>{if(e.target.id==='ruleModal')$('#ruleModal').classList.remove('show')};$('#closeTry').onclick=()=>$('#tryModal').classList.remove('show');$('#tryModal').onclick=e=>{if(e.target.id==='tryModal')$('#tryModal').classList.remove('show')};$('#tryUndo').onclick=()=>{state.tryStack.pop();renderTry()};$('#tryClear').onclick=()=>{state.tryStack=[];renderTry()};$('#tryReset').onclick=()=>{state.tryStack=[...state.tryBase];renderTry()};
