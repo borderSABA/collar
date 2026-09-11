@@ -1,0 +1,134 @@
+重ねて色をつくるゲーム - COMMON PATCH NOTES
+==============================================
+
+ゲーム名：重ねて色をつくるゲーム
+共通化バージョン：Online v0.9 / 共通オンラインボドゲ実装規格 v4
+
+[ADAPTER]
+GAME_ID = kasanete-color
+GAME_NAME = 重ねて色をつくるゲーム
+MAX_PLAYERS = 10
+WORKER_ORIGIN = https://kasanete-color-online.naitoryo7110.workers.dev
+APP_VERSION = v0.9
+
+タイトル描画箇所 = 01_GitHub用/index.html / #join, .topbar
+ROOM一覧描画関数 = refreshRooms()
+ROOM参加関数 = joinRoom(), checkRoomJoin(), connect()
+ゲーム開始関数 = Client startBtn handler / Worker GameRoom.startGame()
+再接続関数 = scheduleReconnect(), restoreActiveRoom(), connect()
+ROOM初期化関数 = forceResetRoom() / Worker /reset-empty
+WorkerのROOMクラス/処理 = GameRoom
+Workerの保存関数 = GameRoom.save()
+参加者配列 = this.data.players
+CPU配列 = なし
+ゲーム状態 = this.data.phase / this.data
+
+[CLIENT]
+ファイル：01_GitHub用/index.html
+
+変更関数：共通定数
+・GAME_ID / GAME_NAME / MAX_PLAYERS / WORKER_ORIGIN / APP_VERSION を定義
+・COMMON_PLAYER_NAME_KEY = boardgamePlayerName
+・ROOM_IDS = room1～room4
+・既存Worker URLは変更なし
+
+変更関数：commonSavedName(), saveCommonNameOnActualStart()
+・共通プレイヤー名コードを追加
+・名前入力時、ROOM参加時には boardgamePlayerName を更新しない
+・gameSessionId付きのゲーム開始状態受信時だけ保存
+・入力途中は sessionStorage に保持
+
+変更関数：refreshRooms()
+・固定ROOM 1～4表示
+・PC 4列、スマホ 2列×2段
+・ROOM番号、人数/10、参加者名、待機中/ゲーム中/終了、参加/再接続、個別初期化を表示
+
+変更関数：joinRoom(), checkRoomJoin(), connect()
+・WebSocket接続前に /join-check を実行
+・空ROOMのみホスト権限確認
+・既存ROOMはホスト権限なしでも参加可能
+・同一ROOM再接続tokenを使用
+
+変更関数：forceResetRoom()
+・/reset-empty で指定ROOMだけ初期化
+・確認ダイアログあり
+・接続中プレイヤーがいるROOMは初期化拒否
+
+変更関数：restoreActiveRoom(), scheduleReconnect()
+・ページ更新後に現在ROOMへ自動再接続
+・visibilitychange / online で既存再接続処理を呼ぶ
+
+変更関数：newActionId() とロビー操作
+・settings / start / reset / next / backToLobby に actionId を付与
+
+HOME / プレイ記録UI：
+・表示なし（規格v4どおり）
+・共通管理Workerとの内部連携のみ使用
+
+[WORKER]
+ファイル：02_Cloudflare_Workers用/src/index.js
+
+変更箇所：共通定数・共通管理関数
+・COMMON_MANAGER_URL対応
+・checkHostPermission()
+・writePlayRecord()
+・isDuplicateAction()
+
+変更箇所：GET /join-check
+・token既存またはROOMに1人以上いる場合はホスト確認なし
+・空ROOMのみ共通管理Workerへ名前完全一致で確認
+・権限なし文言を「ホスト権限がありません」に統一
+・確認失敗は「ホスト権限を確認できません。」
+
+変更関数：GameRoom.join()
+・WebSocket側でも空ROOM時のホスト権限を再確認
+・既存ROOMへの一般参加は確認しない
+・最大10人維持
+
+変更関数：GameRoom.startGame(), createPlayRecordForStart()
+・実際のゲーム開始時だけ /api/play/start を1回送信
+・recordEpoch / gameSequence / recordId / gameSessionId を使用
+・ROOM参加、再接続、ロビー表示では送信しない
+・共通Worker応答不明時の自動再送なし
+
+変更箇所：GameRoom.fresh(), ensure()
+・プレイ記録状態と processedActions を追加
+・完全初期化時に記録状態とactionId履歴を初期化
+
+変更箇所：POST /reset-empty
+・接続中の人間がいるROOMは409で拒否
+・指定ROOMだけ完全初期化
+・他ROOMには影響なし
+
+変更関数：GameRoom.onMessage()
+・共通化対象操作の playerId + actionId 二重処理防止
+・ゲーム本編の回答ロジック、得点、難易度、タイマー処理は変更なし
+
+変更関数：GameRoom.publicState()
+・gameSessionId / gameStarted を自分を含む全クライアントへ同期
+・非公開の他プレイヤー回答ドラフトは従来どおり送らない
+
+[WORKER CONFIG]
+ファイル：02_Cloudflare_Workers用/wrangler.toml
+・既存 name / Durable Objects / migration を維持
+・COMMON_MANAGER_URL だけ vars に追加
+
+ファイル：02_Cloudflare_Workers用/0_CHECK_SERVER.bat
+ファイル：02_Cloudflare_Workers用/1_DEPLOY_SERVER.bat
+・ASCIIのみ
+・BOMなし
+・CRLF
+・npm/npx は call 経由
+・成功/失敗とも pause
+
+[UNCHANGED GAME RULES]
+・最大10人
+・全員同時回答
+・3秒カウントダウン
+・難易度 1～5 / ランダム / ランダムハード
+・使用色一致2点
+・一致者なしの場合の最接近1点
+・通常 / 早押し回答モード
+・回答時間記録
+・混色計算
+・リザルト色クリックで試色
