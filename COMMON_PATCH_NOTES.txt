@@ -1,5 +1,5 @@
 重ねて色をつくるゲーム
-共通化バージョン：v0.11
+共通化バージョン：v0.12
 
 [CLIENT]
 
@@ -53,3 +53,27 @@ https://kasanete-color-online.naitoryo7110.workers.dev
 ・カウントダウン中は「開始まで 3秒」等、開始後は「残り ○秒」を同じ位置に表示。
 ・タイトルのバージョン表記をOnline v0.11へ修正。
 ・ゲームルール、難易度、得点、オンライン進行、Worker処理は変更なし。
+
+
+[v0.12 COUNTDOWN / TIMER SYNC FIX]
+[CLIENT]
+ファイル：index.html
+変更関数：handle() / serverNowMs() / startTimer() / renderCountdown()
+・Workerから受信したserverNowを基準に端末時計との差を補正。
+・スマホ端末時刻とWorker時刻のずれで3→2→1が飛ぶ問題を修正。
+・カウントダウン終了時にcountdownCompleteを1回だけ送信し、Worker側の遅延だけに依存しない進行へ変更。
+・制限時間0秒誤表示を防ぎ、deadlineをサーバー時刻基準で残り秒数へ変換。
+・期限到達時はtimeExpiredを1回だけ送信してタイムアップ処理を促進。
+
+[WORKER]
+ファイル：src/index.js
+変更関数：onMessage() / beginPlaying() / expireRound() / alarm() / publicState()
+・snapshotへserverNowを追加。
+・countdownCompleteを受信すると時刻検証後にplayingへ遷移。
+・問題開始時刻は古いcountdownEndではなく、実際にplayingへ遷移したDate.now()から開始。
+・その時点から設定秒数ぶんdeadlineを新規設定するため、開始直後に「残り0秒」になる問題を修正。
+・Durable Object Alarmはフォールバックとして維持。
+・timeExpiredによる期限処理を追加。
+
+既存Worker URLは変更なし：
+https://kasanete-color-online.naitoryo7110.workers.dev
